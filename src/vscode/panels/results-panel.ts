@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 import { CONFIG_KEYS, CONFIG_SECTION } from '../command-ids';
-import { readResultsLook } from '../settings';
+import { readResultsKeep, readResultsLook } from '../settings';
 import { changeVerdict, NO_POLICY, type WritePolicy } from '../../services/write-policy';
 import type { Logger } from '../../core/logging/logger';
 import type { QueryRunner } from '../../services/query-runner';
@@ -33,7 +33,7 @@ import {
 } from '../../shared/protocols/result-grid';
 import { RpcPeer } from '../../shared/rpc';
 import { replacementFor, revealColumn, type SqlTextOutcome } from '../../services/sql-text-outcome';
-import { buildState, errorOffsetOf, followActive } from './results-state';
+import { addedResults, buildState, errorOffsetOf, followActive } from './results-state';
 import { createWebviewAppPanel, webviewTransport } from './webview-panel';
 import { formatCount } from '../../core/number-format';
 import { tableActionCall } from './table-action';
@@ -102,6 +102,8 @@ export class ResultsPanel implements vscode.Disposable {
   private readonly subscriptions: vscode.Disposable[] = [];
   private readonly documentUri: string;
   private activeId: string | undefined;
+  /** The result ids the page has been shown; a new one means a run just finished (V16.4). */
+  private readonly seen = new Set<string>();
   private disposed = false;
 
   /** Shows the results of a document, creating the panel when needed. */
@@ -407,6 +409,14 @@ export class ResultsPanel implements vscode.Disposable {
     this.rpc.on('pinResult', ({ resultId, pinned }) => {
       this.deps.results.pin(resultId, pinned);
     });
+    this.rpc.on('closeResult', ({ resultId }) => {
+      void this.closeResult(resultId);
+    });
+    this.rpc.on('setKeepResults', (keep) => {
+      void vscode.workspace
+        .getConfiguration(CONFIG_SECTION)
+        .update(CONFIG_KEYS.resultsKeep, keep, vscode.ConfigurationTarget.Global);
+    });
     this.rpc.on('openHistory', () => {
       void this.deps.showHistory?.(this.documentUri);
     });
@@ -479,7 +489,8 @@ export class ResultsPanel implements vscode.Disposable {
         if (
           !this.disposed &&
           (event.affectsConfiguration(`${CONFIG_SECTION}.${CONFIG_KEYS.resultsRowHeight}`) ||
-            event.affectsConfiguration(`${CONFIG_SECTION}.${CONFIG_KEYS.resultsMaxColumnWidth}`))
+            event.affectsConfiguration(`${CONFIG_SECTION}.${CONFIG_KEYS.resultsMaxColumnWidth}`) ||
+            event.affectsConfiguration(`${CONFIG_SECTION}.${CONFIG_KEYS.resultsKeep}`))
         ) {
           this.update();
         }
@@ -516,10 +527,15 @@ export class ResultsPanel implements vscode.Disposable {
       return;
     }
     const summaries = this.deps.results.forDocument(this.documentUri);
-    // A replaced active tab is followed to its replacement, so the user stays where they were.
-    const followed = followActive(summaries, this.activeId, (id) =>
-      this.deps.results.successorOf(id),
-    );
+    const added = addedResults(this.seen, summaries);
+    for (const summary of summaries) {
+      this.seen.add(summary.id);
+    }
+    // A run shows its own result, even when the user was reading an older one; otherwise a
+    // replaced active tab is followed to its replacement, so the user stays where they were.
+    const followed =
+      added.at(-1) ??
+      followActive(summaries, this.activeId, (id) => this.deps.results.successorOf(id));
     const state = buildState(summaries, followed, this.deps.runner.isRunning(this.documentUri));
     const shown = this.deps.tableOf?.(this.documentUri);
     if (shown?.kind === 'view') {
@@ -531,8 +547,33 @@ export class ResultsPanel implements vscode.Disposable {
       this.panel.title = title;
     }
     this.activeId = state.activeId;
+    state.keepResults = readResultsKeep();
     state.look = readResultsLook();
     this.rpc.emit('state', state);
+  }
+
+  /**
+   * Closes one result's tab (V16.3). Unsaved edits would go with it, so they are confirmed
+   * first — the same rule that keeps a re-run from replacing an edited result.
+   */
+  private async closeResult(resultId: string): Promise<void> {
+    const summary = this.deps.results.get(resultId);
+    if (summary === undefined) {
+      return;
+    }
+    const pending = summary.changedCells + summary.insertedRows + summary.deletedRows;
+    if (pending > 0) {
+      const close = vscode.l10n.t('Close Result');
+      const choice = await vscode.window.showWarningMessage(
+        vscode.l10n.t('This result has unsaved changes. Close it and lose them?'),
+        { modal: true },
+        close,
+      );
+      if (choice !== close) {
+        return;
+      }
+    }
+    this.deps.results.drop(resultId);
   }
 
   /** Opens the query and puts the cursor on the character the server complained about. */

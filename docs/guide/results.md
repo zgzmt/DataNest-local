@@ -2,12 +2,18 @@
 
 ## The grid
 
-Results open beside the SQL editor, one tab per run (a document keeps its last 20). The
+Results open beside the SQL editor, one tab per run. The
 grid draws only the rows on screen, so a result of a million rows scrolls as smoothly as
 one of ten; the rows themselves stay in the extension, and the page asks for the ones it
 shows. Values keep their precision: a `BIGINT`, a `DECIMAL` or a timestamp is shown,
 copied and exported exactly as the server sent it.
 
+- **Tabs**: each statement of a run gets its own tab, and the grid switches to the result
+  a new run produced. Close one with its **×** (every tab has one; unsaved edits are
+  confirmed first), and choose how many results a document keeps with
+  `datanest.results.keep` — in the settings or right in the grid's **View settings** (20 by
+  default). One result more than that closes the oldest tab; a pinned result stays. Closing
+  the panel or the editor drops them all.
 - **Sort** by clicking a header: ascending, descending, then the server's order again.
   Sorting covers every row, not just the ones on screen.
 - **Find in results** searches every cell of every row; `Enter` and `Shift+Enter` step

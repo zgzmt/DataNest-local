@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   completionContextAt,
+  tableClauseBefore,
   tableMentions,
   unquote,
 } from '../../../../src/core/sql/completion-context';
@@ -230,5 +231,42 @@ describe('unquote', () => {
     expect(unquote('name')).toBe('name');
     expect(unquote('"name')).toBe('"name');
     expect(unquote('')).toBe('');
+  });
+});
+
+describe('tableClauseBefore (V16.2)', () => {
+  /** True when the cursor marked with `|` follows a word that a table name comes after. */
+  function before(sqlWithCursor: string): boolean {
+    const offset = sqlWithCursor.indexOf('|');
+    if (offset === -1) {
+      throw new Error('Mark the cursor with |');
+    }
+    return tableClauseBefore(sqlWithCursor.replace('|', ''), offset);
+  }
+
+  it('answers yes after the words a table name follows', () => {
+    expect(before('SELECT * FROM |')).toBe(true);
+    expect(before('SELECT * FROM   |')).toBe(true);
+    expect(before('SELECT * FROM\n  |')).toBe(true);
+    expect(before('SELECT * FROM a JOIN |')).toBe(true);
+    expect(before('INSERT INTO |')).toBe(true);
+    expect(before('UPDATE |')).toBe(true);
+    expect(before('select * from |')).toBe(true);
+    expect(before('SELECT * FROM\t|')).toBe(true);
+  });
+
+  it('answers no anywhere else, so the list does not open mid-expression', () => {
+    expect(before('SELECT |')).toBe(false);
+    expect(before('SELECT a, |')).toBe(false);
+    expect(before('FROM t WHERE a = 1 |')).toBe(false);
+    expect(before('SELECT * FROM t |')).toBe(false);
+    expect(before('SELECT * FROM arch.|')).toBe(false);
+    expect(before('|')).toBe(false);
+    expect(before('SELECT * FROM t WHERE a = |')).toBe(false);
+  });
+
+  it('looks past a long run of text and still finds the word', () => {
+    const padding = 'x'.repeat(150);
+    expect(tableClauseBefore(`SELECT * FROM ${padding} JOIN `, 27 + padding.length + 5)).toBe(true);
   });
 });

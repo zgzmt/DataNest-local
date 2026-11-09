@@ -13,12 +13,13 @@ import { type FilledStatements, inDocument } from '../../services/query-variable
 import type { Substitution } from '../../core/sql/variables';
 import { readSafeMode } from '../settings';
 import { COMMAND_IDS } from '../command-ids';
-import type { DriverId } from '../../shared/connection';
+import { filterSupport, type DriverId } from '../../shared/connection';
 import { type SqlTextOutcome, sqlTextOutcome } from '../../services/sql-text-outcome';
 import type { SessionTarget } from '../../services/connection-manager';
 import type { DocumentBinding } from './document-bindings';
 import type { QueryEditors } from './query-editor';
 import { SQL_LANGUAGE_ID } from './query-editor';
+import { targetLenses, type TargetLenses, type TargetLensTexts } from './target-lenses';
 
 export interface RunQueryDeps {
   readonly runner: QueryRunner;
@@ -441,9 +442,48 @@ function asRunRange(args: unknown): RunRangeArgs | undefined {
   return { documentUri, start, end };
 }
 
+function targetLensTexts(): TargetLensTexts {
+  return {
+    pickConnection: vscode.l10n.t('$(plug) Select connection'),
+    pickDatabase: vscode.l10n.t('$(database) Select database'),
+    connectionTooltip: vscode.l10n.t('Click to run this query on another connection'),
+    databaseTooltip: vscode.l10n.t('Click to switch the database of this query'),
+    pickTooltip: vscode.l10n.t('DataNest: choose the connection and database for this query'),
+    production: vscode.l10n.t('$(warning) PROD'),
+    readOnly: vscode.l10n.t('$(lock)'),
+  };
+}
+
 /**
- * A "▶ Run" lens above every statement. The lens carries offsets, so it keeps
- * working while the user edits around it.
+ * The two target lenses of one statement: where it runs and how to switch it. Both carry
+ * the range of the statement, like Run does, so the order they are given in is the order
+ * the editor shows.
+ */
+function lensList(target: TargetLenses, range: vscode.Range): vscode.CodeLens[] {
+  const lenses = [
+    new vscode.CodeLens(range, {
+      title: target.connection.title,
+      tooltip: target.connection.tooltip,
+      command: COMMAND_IDS.selectConnection,
+    }),
+  ];
+  if (target.database !== undefined) {
+    lenses.push(
+      new vscode.CodeLens(range, {
+        title: target.database.title,
+        tooltip: target.database.tooltip,
+        command: COMMAND_IDS.selectDatabase,
+      }),
+    );
+  }
+  return lenses;
+}
+
+/**
+ * "▶ Run", the connection and the database above every statement: whichever statement the
+ * user is looking at says where it runs, and a click on either name switches the whole
+ * document (a binding belongs to the document, not to a statement). The Run lens carries
+ * offsets, so it keeps working while the user edits around it.
  */
 export class RunCodeLensProvider implements vscode.CodeLensProvider {
   private readonly changed = new vscode.EventEmitter<void>();
@@ -455,24 +495,50 @@ export class RunCodeLensProvider implements vscode.CodeLensProvider {
     if (document.languageId !== SQL_LANGUAGE_ID || this.deps.codeLens?.() === false) {
       return [];
     }
-    const driver = driverOf(this.deps, document.uri.toString());
-    const text = document.getText();
-    return splitStatements(text, driver).map((statement) => {
+    const documentUri = document.uri.toString();
+    const driver = driverOf(this.deps, documentUri);
+    const statements = splitStatements(document.getText(), driver);
+    if (statements.length === 0) {
+      // Nothing to run yet, but the user still wants to say where the document runs.
+      return this.lensesOfTarget(documentUri, new vscode.Range(0, 0, 0, 0));
+    }
+    const target = this.targetTexts(documentUri);
+    return statements.flatMap((statement) => {
       const range = new vscode.Range(
         document.positionAt(statement.start),
         document.positionAt(statement.end),
       );
       const args: RunRangeArgs = {
-        documentUri: document.uri.toString(),
+        documentUri,
         start: statement.start,
         end: statement.end,
       };
-      return new vscode.CodeLens(range, {
-        title: vscode.l10n.t('$(play) Run'),
-        command: COMMAND_IDS.runRange,
-        arguments: [args],
-      });
+      // Run first: the same range for all three, so the order given here is the order shown.
+      return [
+        new vscode.CodeLens(range, {
+          title: vscode.l10n.t('$(play) Run'),
+          command: COMMAND_IDS.runRange,
+          arguments: [args],
+        }),
+        ...lensList(target, range),
+      ];
     });
+  }
+
+  /** The connection and the database of the document, both above the given range. */
+  private lensesOfTarget(documentUri: string, range: vscode.Range): vscode.CodeLens[] {
+    return lensList(this.targetTexts(documentUri), range);
+  }
+
+  /** What the two target lenses say for this document, computed once per refresh. */
+  private targetTexts(documentUri: string): TargetLenses {
+    const binding = this.deps.editors.bindings.get(documentUri);
+    const config = binding === undefined ? undefined : this.deps.store.get(binding.connectionId);
+    // The synchronous sibling of the driver's `capabilities.databases`: a lens may not
+    // await, and a connection with a single database (Oracle's one service) has nothing
+    // to switch.
+    const databases = config !== undefined && filterSupport(config.driver).databases;
+    return targetLenses(binding, config, databases, targetLensTexts());
   }
 
   refresh(): void {

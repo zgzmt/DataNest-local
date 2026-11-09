@@ -5,6 +5,7 @@
   import { type EditInput, isTextEditable } from '../../../../src/shared/cell-input';
 import type { RowAction } from '../../../../src/shared/row-action';
   import {
+    DEFAULT_KEEP_RESULTS,
     MAX_WINDOW_ROWS,
     type ResultGridProtocol,
     type ResultGridState,
@@ -218,6 +219,8 @@ import type { RowAction } from '../../../../src/shared/row-action';
   }
 
   let gridState = $state<ResultGridState | undefined>(undefined);
+  /** The strip of result tabs, kept to bring the shown one into view (V16.4). */
+  let tabsEl = $state<HTMLElement | undefined>(undefined);
   let failure = $state<string | undefined>(undefined);
   let widths = $state<number[]>([]);
   let search = $state('');
@@ -748,6 +751,23 @@ import type { RowAction } from '../../../../src/shared/row-action';
     resetFor(gridState.tabs.find((candidate) => candidate.id === resultId));
   }
 
+  // A run activates its own result (the host decides), so a narrow panel must follow it.
+  $effect(() => {
+    const id = gridState?.activeId;
+    if (id === undefined || tabsEl === undefined) {
+      return;
+    }
+    tabsEl.querySelector(`[data-tab-id="${CSS.escape(id)}"]`)?.scrollIntoView({
+      block: 'nearest',
+      inline: 'nearest',
+    });
+  });
+
+  /** Closes one result tab; the whole document keeps talking to the same connection. */
+  function closeTab(resultId: string): void {
+    rpc.emit('closeResult', { resultId });
+  }
+
   /** Copies the selected cells as TSV, fetching whatever is not loaded yet. */
   async function copySelection(tab: ResultTab, selection: SelectionInfo): Promise<void> {
     const count = selection.bottom - selection.top + 1;
@@ -1135,37 +1155,55 @@ import type { RowAction } from '../../../../src/shared/row-action';
     </div>
   {:else}
     {#if gridState.tabs.length > 1}
-    <div class="tabs" role="tablist">
+    <div class="tabs" role="tablist" bind:this={tabsEl}>
       {#each gridState.tabs as tab (tab.id)}
-        <button
-          type="button"
-          role="tab"
-          class="tab"
+        <div
+          class="tab-shell"
           class:active={tab.id === gridState.activeId}
           class:failed={tab.error !== undefined}
-          aria-selected={tab.id === gridState.activeId}
-          title={tab.statement}
-          onclick={() => {
-            selectTab(tab.id);
-          }}
+          role="presentation"
+          data-tab-id={tab.id}
         >
-          <span
-            class="tab-icon"
-            class:ok={tab.error === undefined && tab.affectedRows !== undefined}
-            class:fail={tab.error !== undefined}
+          <button
+            type="button"
+            role="tab"
+            class="tab"
+            aria-selected={tab.id === gridState.activeId}
+            title={tab.statement}
+            onclick={() => {
+              selectTab(tab.id);
+            }}
           >
-            <Icon
-              name={tab.error !== undefined
-                ? 'error'
-                : tab.restored === true
-                  ? 'history'
-                  : tab.affectedRows !== undefined
-                    ? 'check'
-                    : 'table'}
-              size={14}
-            />
-          </span>{#if tab.pinned === true}<span class="tab-pin" data-testid="tab-pin"><Icon name="pinned" size={12} /></span>{/if}<span class="tab-title">{tab.title}</span>
-        </button>
+            <span
+              class="tab-icon"
+              class:ok={tab.error === undefined && tab.affectedRows !== undefined}
+              class:fail={tab.error !== undefined}
+            >
+              <Icon
+                name={tab.error !== undefined
+                  ? 'error'
+                  : tab.restored === true
+                    ? 'history'
+                    : tab.affectedRows !== undefined
+                      ? 'check'
+                      : 'table'}
+                size={14}
+              />
+            </span>{#if tab.pinned === true}<span class="tab-pin" data-testid="tab-pin"><Icon name="pinned" size={12} /></span>{/if}<span class="tab-title">{tab.title}</span>
+          </button>
+          <button
+            type="button"
+            class="tab-close"
+            data-testid="tab-close"
+            aria-label={t('tab.close')}
+            title={t('tab.close')}
+            onclick={() => {
+              closeTab(tab.id);
+            }}
+          >
+            <Icon name="close" size={12} />
+          </button>
+        </div>
       {/each}
     </div>
     {/if}
@@ -1577,6 +1615,10 @@ import type { RowAction } from '../../../../src/shared/row-action';
                 <ViewSettings
                   {view}
                   {look}
+                  keep={gridState.keepResults ?? DEFAULT_KEEP_RESULTS}
+                  onKeep={(keep: number) => {
+                    rpc.emit('setKeepResults', keep);
+                  }}
                   onChange={changeGridView}
                   onColumns={() => {
                     columnsOpen = true;
@@ -2116,45 +2158,93 @@ import type { RowAction } from '../../../../src/shared/row-action';
     scrollbar-width: none;
   }
 
-  .tab {
+  .tab-shell {
     display: inline-flex;
     flex: none;
-    gap: 6px;
     align-items: center;
-    max-width: 280px;
+    max-width: 320px;
     height: 28px;
-    padding: 0 12px 0 10px;
     color: var(--vscode-panelTitle-inactiveForeground, var(--dn-muted));
     background: transparent;
     border: 1px solid transparent;
     border-radius: 14px;
-    font-family: inherit;
-    font-size: inherit;
-    white-space: nowrap;
-    cursor: pointer;
     transition:
       color var(--dn-duration) var(--dn-ease),
       background-color var(--dn-duration) var(--dn-ease);
   }
 
-  .tab:hover {
+  .tab-shell:hover {
     color: var(--vscode-panelTitle-activeForeground, var(--vscode-foreground));
     background: var(--dn-hover);
   }
 
-  .tab.active {
+  .tab-shell.active {
     color: var(--vscode-panelTitle-activeForeground, var(--vscode-foreground));
     background: color-mix(in srgb, var(--dn-accent) 18%, transparent);
     border-color: color-mix(in srgb, var(--dn-accent) 55%, transparent);
   }
 
-  .tab.failed {
+  .tab-shell.failed {
     color: var(--dn-danger);
   }
 
-  .tab.failed.active {
+  .tab-shell.failed.active {
     background: color-mix(in srgb, var(--vscode-errorForeground) 16%, transparent);
     border-color: color-mix(in srgb, var(--vscode-errorForeground) 55%, transparent);
+  }
+
+  .tab {
+    display: inline-flex;
+    flex: 0 1 auto;
+    gap: 6px;
+    align-items: center;
+    min-width: 0;
+    height: 26px;
+    padding: 0 2px 0 10px;
+    color: inherit;
+    background: transparent;
+    border: 0;
+    font-family: inherit;
+    font-size: inherit;
+    white-space: nowrap;
+    cursor: pointer;
+  }
+
+  /* Closes one result (V16.3); it never becomes the active tab by itself. */
+  .tab-close {
+    display: inline-flex;
+    flex: none;
+    align-items: center;
+    justify-content: center;
+    width: 18px;
+    height: 18px;
+    margin: 0 6px 0 2px;
+    padding: 0;
+    color: inherit;
+    background: transparent;
+    border: 0;
+    border-radius: 9px;
+    /* Always there, so the way out of a tab is never guessed (V16.4). */
+    opacity: 0.8;
+    cursor: pointer;
+    transition:
+      opacity var(--dn-duration) var(--dn-ease),
+      background-color var(--dn-duration) var(--dn-ease);
+  }
+
+  .tab-shell.active .tab-close,
+  .tab-shell:hover .tab-close {
+    opacity: 1;
+  }
+
+  .tab-close:hover {
+    background: color-mix(in srgb, var(--vscode-foreground) 16%, transparent);
+  }
+
+  .tab-close:focus-visible {
+    outline: 1px solid var(--vscode-focusBorder, var(--dn-accent));
+    outline-offset: 0;
+    opacity: 1;
   }
 
   .tab-icon {
@@ -2193,6 +2283,7 @@ import type { RowAction } from '../../../../src/shared/row-action';
   }
 
   .tab-title {
+    min-width: 0;
     overflow: hidden;
     text-overflow: ellipsis;
   }

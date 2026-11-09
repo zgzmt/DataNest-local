@@ -21,19 +21,35 @@
 
   /** How much one press of the width buttons moves the limit. */
   const COLUMN_LIMIT_STEP = 60;
+  /** Bounds of the results kept, the same as the setting (V16.3). */
+  const MIN_KEEP = 1;
+  const MAX_KEEP = 100;
 
   interface Props {
     view: GridView;
     /** What the settings ask for: the reset goes back to it. */
     look?: ResultsLook;
+    /** How many results the document keeps (`datanest.results.keep`, V16.3). */
+    keep?: number;
     onChange: (next: GridView) => void;
+    /** The user changed how many results are kept; the host writes the setting. */
+    onKeep?: (value: number) => void;
     /** Opens the columns menu (hide, pin, fit). */
     onColumns: () => void;
     onClose: () => void;
     t: Translate;
   }
 
-  const { view, look = DEFAULT_LOOK, onChange, onColumns, onClose, t }: Props = $props();
+  const {
+    view,
+    look = DEFAULT_LOOK,
+    keep = 20,
+    onChange,
+    onKeep,
+    onColumns,
+    onClose,
+    t,
+  }: Props = $props();
 
   function set<K extends keyof GridView>(key: K, value: GridView[K]): void {
     onChange({ ...view, [key]: value });
@@ -41,6 +57,10 @@
 
   function step(delta: number): void {
     set('rowHeight', Math.min(MAX_ROW_HEIGHT, Math.max(MIN_ROW_HEIGHT, view.rowHeight + delta)));
+  }
+
+  function stepKeep(delta: number): void {
+    onKeep?.(Math.min(MAX_KEEP, Math.max(MIN_KEEP, keep + delta)));
   }
 
   function stepLimit(delta: number): void {
@@ -107,6 +127,16 @@
       <output data-testid="max-column-width">{view.maxColumnWidth}</output>
       <IconButton icon="chevron-up" label={t('view.wider')} disabled={view.maxColumnWidth >= MAX_COLUMN_LIMIT}
         onclick={() => { stepLimit(COLUMN_LIMIT_STEP); }} />
+    </div>
+  </div>
+  <div class="row">
+    <span>{t('view.keepResults')}</span>
+    <div class="stepper" role="group" aria-label={t('view.keepResults')}>
+      <IconButton icon="chevron-down" label={t('view.keepFewer')} disabled={keep <= MIN_KEEP}
+        onclick={() => { stepKeep(-1); }} />
+      <output data-testid="keep-results">{keep}</output>
+      <IconButton icon="chevron-up" label={t('view.keepMore')} disabled={keep >= MAX_KEEP}
+        onclick={() => { stepKeep(1); }} />
     </div>
   </div>
   <div class="row">

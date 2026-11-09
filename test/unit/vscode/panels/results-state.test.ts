@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import type { ResultSummary } from '../../../../src/services/result-store';
 import { resultGridProtocol } from '../../../../src/shared/protocols/result-grid';
 import {
+  addedResults,
   buildState,
   errorOffsetOf,
   followActive,
@@ -305,5 +306,25 @@ describe('followActive', () => {
   it('has nothing to follow before a tab was chosen', () => {
     expect(followActive(tabs, undefined, of)).toBeUndefined();
     expect(followActive([], undefined, of)).toBeUndefined();
+  });
+});
+
+describe('addedResults (V16.4)', () => {
+  const tabs = [{ id: 'r1' }, { id: 'r2' }, { id: 'r3' }];
+
+  it('names what the page has not been shown yet, oldest first', () => {
+    expect(addedResults(new Set(['r1']), tabs)).toEqual(['r2', 'r3']);
+  });
+
+  it('is empty while nothing new arrived, so the user keeps their tab', () => {
+    expect(addedResults(new Set(['r1', 'r2', 'r3']), tabs)).toEqual([]);
+  });
+
+  it('takes results that came back from the history for new ones only once', () => {
+    expect(addedResults(new Set(['r1', 'r3']), tabs)).toEqual(['r2']);
+  });
+
+  it('has nothing before the first run', () => {
+    expect(addedResults(new Set(), [])).toEqual([]);
   });
 });

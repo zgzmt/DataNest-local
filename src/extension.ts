@@ -78,6 +78,7 @@ import {
   readServersMaxOpenBytes,
   readServersShowHidden,
   readAiEnabled,
+  readResultsKeep,
   readResultsRestore,
   readResultsRestoreRun,
   readRowLimit,
@@ -195,7 +196,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<DataNe
     limit: () => readHistoryLimit(),
     nameOf: (connectionId) => store.get(connectionId)?.name,
   });
-  const results = new ResultStore();
+  const results = new ResultStore({ maxResults: () => readResultsKeep() });
   const runner = new QueryRunner({
     history,
     manager,
@@ -431,6 +432,10 @@ export async function activate(context: vscode.ExtensionContext): Promise<DataNe
       if (event.affectsConfiguration(`${CONFIG_SECTION}.editor`)) {
         lenses.refresh();
         statementView.applySettings();
+      }
+      // A smaller "keep results" closes the extra tabs now, not at the next run (V16.3).
+      if (event.affectsConfiguration(`${CONFIG_SECTION}.${CONFIG_KEYS.resultsKeep}`)) {
+        results.trimAll();
       }
     }),
   );

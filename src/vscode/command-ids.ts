@@ -53,6 +53,8 @@ export const COMMAND_IDS = {
   newQuery: 'datanest.query.new',
   /** Picks the connection and database of the active SQL document. */
   selectConnection: 'datanest.query.selectConnection',
+  /** Picks only the database of the active SQL document, keeping its connection. */
+  selectDatabase: 'datanest.query.selectDatabase',
   /** Runs the selection, or the statement the cursor is in. */
   runQuery: 'datanest.query.run',
   /** Runs every statement of the document. */
@@ -355,6 +357,8 @@ export const CONFIG_KEYS = {
   resultsMaxColumnWidth: 'results.maxColumnWidth',
   /** Result tabs of saved SQL files come back after a restart, and whether they run again (V13.12). */
   resultsRestore: 'results.restore',
+  /** How many results one document keeps (V16.3). */
+  resultsKeep: 'results.keep',
   resultsRestoreRun: 'results.restoreRun',
   /** The tools and the chat participant for the editor's language model (V13.15). */
   aiEnabled: 'ai.enabled',

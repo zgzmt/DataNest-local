@@ -162,10 +162,16 @@ All of them work through SSH tunnels, SOCKS5 and HTTP proxies and TLS where the 
 - Queries run in a normal editor tab, so your keybindings, themes and extensions work.
 - `Ctrl+Enter` runs the statement under the cursor or the selection,
   `Ctrl+Shift+Enter` runs the whole file, and a “▶ Run” lens sits above every statement.
+- Above every statement, next to the Run lens, the connection and the database the query runs
+  in are shown as lenses of their own: click the connection to run the query elsewhere, click
+  the database to switch the database and keep the connection. The whole document follows —
+  a query file talks to one connection at a time.
 - The statement splitter understands strings, comments, `$$ … $$`, MySQL's `DELIMITER`
   and SQL Server's `GO`, procedure bodies and variables of a batch.
 - Completion knows aliases, the columns of every joined table, CTEs and subqueries,
-  dialect functions and statement snippets.
+  dialect functions and statement snippets. The tables of the connection open by themselves
+  right after `FROM`, `JOIN`, `UPDATE` and `INSERT INTO`, and the columns after `table.` — all
+  from the structure cached for the tree, so typing never queries the server.
 - Hover over a table or column for its type, keys and comment; F12 opens its DDL.
 - Format Document in the dialect of the connection, with style settings.
 - Errors from the server are underlined right where they happened.
@@ -188,6 +194,9 @@ All of them work through SSH tunnels, SOCKS5 and HTTP proxies and TLS where the 
   hex dumps and BLOB images in a value panel.
 - Values keep their precision: a `BIGINT` or a `DECIMAL` is never rounded on the way
   to the screen, to the clipboard or into a file.
+- Where a query has several statements, each result gets its own tab; close one with its **×**,
+  and choose how many are kept (`datanest.results.keep`, also in the grid's view settings) —
+  one more than that closes the oldest.
 
 **Editing data**
 
@@ -295,6 +304,7 @@ The [documentation](docs/index.md) has a guide to every feature, the
 | `datanest.pageSize` | `200` | Rows on one page when a table is opened from the tree. |
 | `datanest.results.rowHeight` | `normal` | Row height of the result grid: `compact`, `normal` or `comfortable`. |
 | `datanest.results.maxColumnWidth` | `420` | The widest a result column gets on its own, in pixels. |
+| `datanest.results.keep` | `20` | Results one query editor keeps; one more closes the oldest tab. Also in the result page's view settings. |
 | `datanest.queryTimeout` | `0` | Seconds before a statement is cancelled; `0` means no limit. |
 | `datanest.showSystemObjects` | `false` | Show the server's own databases and schemas. |
 | `datanest.historyLimit` | `500` | Statements kept in the query history; `0` turns it off. |

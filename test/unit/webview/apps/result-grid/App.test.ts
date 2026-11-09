@@ -1052,9 +1052,13 @@ describe('result grid App', () => {
       });
       // The failed statement's tab stands out and shows its message.
       expect(screen.getByTestId('error').textContent).toContain('bad');
-      expect(screen.getByRole('tab', { name: 'SELECTT 3' }).className.includes('failed')).toBe(
-        true,
-      );
+      // The failing intent is drawn on the pill the tab sits in (V16.3).
+      expect(
+        screen
+          .getByRole('tab', { name: 'SELECTT 3' })
+          .closest('.tab-shell')
+          ?.className.includes('failed'),
+      ).toBe(true);
     });
 
     it('keeps the statement in the tab tooltip', async () => {

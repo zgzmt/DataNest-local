@@ -41,6 +41,21 @@ export interface CompletionContext {
 /** Clause keywords that say a table name comes next. */
 const TABLE_CLAUSES = new Set(['FROM', 'JOIN', 'INTO', 'UPDATE', 'TABLE']);
 
+/** How far back the cheap "is a table expected here" question looks, in characters. */
+const WORD_LOOK_BEHIND = 200;
+
+/**
+ * True when the last word before `offset` is one a table name follows (FROM, JOIN,
+ * INTO, UPDATE, TABLE). The editor asks on every space, so this must not tokenize the
+ * document: a plain word right before the cursor is enough to tell whether the full
+ * analysis (which reads the connection's structure) is worth it.
+ */
+export function tableClauseBefore(sql: string, offset: number): boolean {
+  const before = sql.slice(Math.max(0, offset - WORD_LOOK_BEHIND), offset).trimEnd();
+  const word = /([A-Za-z_$][\w$]*)$/.exec(before)?.[1];
+  return word !== undefined && TABLE_CLAUSES.has(word.toUpperCase());
+}
+
 /** Clause keywords that say a column name comes next. */
 const COLUMN_CLAUSES = new Set([
   'SELECT',

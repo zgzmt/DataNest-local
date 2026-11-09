@@ -1,8 +1,13 @@
-// Completion in a real editor. Without a connection only keywords are known,
-// which is exactly what a user sees before choosing one.
+// Completion in a real editor. Without a connection only keywords are known, which is
+// exactly what a user sees before choosing one; with a connection the tables and the
+// columns of the statement come from its structure.
 
 import * as assert from 'node:assert/strict';
+import { mkdirSync, writeFileSync } from 'node:fs';
+import { join } from 'node:path';
 import * as vscode from 'vscode';
+import { projectConnectionId } from '../../src/services/project-connections';
+import { forgetProject } from './project-workspace';
 
 const EXTENSION_ID = 'datanest.datanest';
 
@@ -104,3 +109,71 @@ describe('completion', () => {
     );
   });
 });
+
+// A connection with real structure supplies the table and column names (V16.2): the
+// project file gives the connection without the form, and the table is made by running
+// a statement through the extension itself.
+describe('completion over a real connection', () => {
+  let root: string;
+  let connection: string;
+
+  before(async () => {
+    await vscode.extensions.getExtension(EXTENSION_ID)?.activate();
+    const folder = vscode.workspace.workspaceFolders?.[0];
+    assert.ok(folder, 'the e2e editor opens a workspace folder');
+    root = folder.uri.fsPath;
+    connection = projectConnectionId(folder.uri.toString(), 'e2e-completion');
+    mkdirSync(join(root, '.vscode'), { recursive: true });
+    writeFileSync(
+      join(root, '.vscode', 'datanest.json'),
+      JSON.stringify({
+        version: 1,
+        connections: [
+          { id: 'e2e-completion', name: 'E2E completion', driver: 'sqlite', file: 'completion.db' },
+        ],
+      }),
+    );
+    await vscode.commands.executeCommand('datanest.tree.refresh');
+    // The table has to exist on the server before completion can offer it.
+    const document = await openBoundSql(connection, 'CREATE TABLE items (id INTEGER, name TEXT);');
+    await vscode.window.showTextDocument(document);
+    await vscode.commands.executeCommand('datanest.query.runAll');
+    await vscode.commands.executeCommand('workbench.action.closeAllEditors');
+  });
+
+  after(async () => {
+    await forgetProject(root, [connection], ['completion.db']);
+  });
+
+  it('offers the tables of the connection right after FROM', async () => {
+    const text = 'SELECT * FROM ';
+    const document = await openBoundSql(connection, text);
+    await vscode.window.showTextDocument(document);
+    const list = await completeAt(document, text.length);
+    assert.ok(labels(list).includes('items'), `tables are missing: ${labels(list).join(', ')}`);
+  });
+
+  it('offers the columns of the table the statement uses', async () => {
+    const text = 'SELECT  FROM items';
+    const document = await openBoundSql(connection, text);
+    await vscode.window.showTextDocument(document);
+    const list = await completeAt(document, 'SELECT '.length);
+    const fields = list.items
+      .filter((item) => item.kind === vscode.CompletionItemKind.Field)
+      .map((item) => (typeof item.label === 'string' ? item.label : item.label.label));
+    assert.deepEqual(fields, ['id', 'name']);
+  });
+});
+
+/** A new SQL document already bound to a connection, with the given text. */
+async function openBoundSql(connection: string, content: string): Promise<vscode.TextDocument> {
+  const document = await vscode.commands.executeCommand<vscode.TextDocument>(
+    'datanest.query.new',
+    connection,
+  );
+  const editor = await vscode.window.showTextDocument(document);
+  await editor.edit((edit) => {
+    edit.insert(new vscode.Position(0, 0), content);
+  });
+  return document;
+}

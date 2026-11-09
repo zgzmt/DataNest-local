@@ -6,6 +6,11 @@ import { DEFAULT_FORMAT_STYLE, type FormatStyle } from '../services/sql-format';
 import { CONFIG_KEYS, CONFIG_SECTION } from './command-ids';
 import { isTransactionMode, type TransactionMode } from './editor/transaction-modes';
 import { lookFromSettings, type ResultsLook } from '../shared/results-look';
+import {
+  DEFAULT_KEEP_RESULTS,
+  MAX_KEEP_RESULTS,
+  MIN_KEEP_RESULTS,
+} from '../shared/protocols/result-grid';
 import type { TreeSettings } from './tree/tree-model';
 import type { KeyBrowserSettings } from '../services/redis/key-browser';
 import { DEFAULT_KEYS_PER_LOAD, type EtcdBrowserSettings } from '../services/etcd/key-browser';
@@ -240,6 +245,17 @@ export function readFormatStyle(
 /** True when a configuration change touches one of our settings. */
 export function affectsDataNest(event: vscode.ConfigurationChangeEvent): boolean {
   return event.affectsConfiguration(CONFIG_SECTION);
+}
+
+/** How many results one document keeps; older ones are closed (V16.3). */
+export function readResultsKeep(): number {
+  const value = vscode.workspace
+    .getConfiguration(CONFIG_SECTION)
+    .get<number>(CONFIG_KEYS.resultsKeep, DEFAULT_KEEP_RESULTS);
+  if (!Number.isInteger(value) || value < MIN_KEEP_RESULTS) {
+    return DEFAULT_KEEP_RESULTS;
+  }
+  return Math.min(MAX_KEEP_RESULTS, value);
 }
 
 /** Whether the result tabs of saved SQL files come back after a restart (V13.12). */

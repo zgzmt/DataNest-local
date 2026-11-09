@@ -210,6 +210,7 @@ describe('protocol shape', () => {
     expect(Object.keys(resultGridProtocol.host.events).sort()).toEqual([
       'cancel',
       'chartResult',
+      'closeResult',
       'copyText',
       'exportResult',
       'importInto',
@@ -219,6 +220,7 @@ describe('protocol shape', () => {
       'ready',
       'revealError',
       'selectTab',
+      'setKeepResults',
       'tableAction',
     ]);
   });

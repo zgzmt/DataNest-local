@@ -11,6 +11,7 @@ import { READ_ONLY_REASONS } from '../read-only-reason';
 import { TABLE_ACTIONS } from '../table-actions';
 import { tableFilterSchema } from '../table-filter';
 import { defineProtocol } from '../rpc';
+
 import {
   array,
   boolean,
@@ -23,6 +24,12 @@ import {
   string,
   union,
 } from '../schema';
+
+/** How many results one document keeps unless the setting says otherwise (V16.3). */
+export const DEFAULT_KEEP_RESULTS = 20;
+/** The bounds of `datanest.results.keep`, and of what one page may show at once. */
+export const MIN_KEEP_RESULTS = 1;
+export const MAX_KEEP_RESULTS = 100;
 
 /** Most rows one page of a table view may hold, which is also what "load all" is capped at. */
 export const MAX_PAGE_SIZE = 1_000_000;
@@ -150,6 +157,8 @@ const stateSchema = object({
   running: boolean(),
   /** `view` when the page shows a database view: it has no table-only tools. */
   tableKind: optional(literal('view')),
+  /** How many results one document keeps, as the settings say (V16.3); absent means 20. */
+  keepResults: optional(number({ integer: true, min: MIN_KEEP_RESULTS, max: MAX_KEEP_RESULTS })),
   /** The look the settings ask for (V13.3); absent means the grid's own defaults. */
   look: optional(
     object({
@@ -504,6 +513,10 @@ export const resultGridProtocol = defineProtocol({
       revealError: object({ resultId }),
       /** Page → host: pin the result, or let go of the pin (V12.5). */
       pinResult: object({ resultId, pinned: boolean() }),
+      /** Page → host: close this result's tab (V16.3). */
+      closeResult: object({ resultId }),
+      /** Page → host: how many results a document should keep, from the view settings (V16.3). */
+      setKeepResults: number({ integer: true, min: MIN_KEEP_RESULTS, max: MAX_KEEP_RESULTS }),
       /** Page → host: choose a result pushed aside by a re-run and bring it back (V12.5). */
       openHistory: object({}),
       /** Page → host: open a chart of this result beside it (V8.7). */

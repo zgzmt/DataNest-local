@@ -64,7 +64,11 @@ alone: the placeholders in them belong to the server.
 ## Help while writing
 
 - Completion knows the tables and columns of the connection, aliases, the columns of every
-  joined table, CTEs and subqueries, the functions of the dialect and statement snippets.
+  joined table, CTEs and subqueries, the functions of the dialect and statement snippets. The
+  list opens by itself right after `FROM`, `JOIN`, `INSERT INTO`, `UPDATE` and
+  `CREATE TABLE`, and after a `.`; anywhere else `Ctrl+Space` asks for it. Names come from the
+  structure DataNest already read for the tree — the server is asked once per list, not on every
+  keystroke.
 - Hover over a table or column for its type, keys and comment; `F12` opens its DDL.
 - **Format Document** formats in the connection's dialect; the `datanest.format.*`
   [settings](settings.md) choose the style.

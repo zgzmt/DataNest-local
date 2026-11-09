@@ -3,10 +3,12 @@
 // actually runs through the connection the document is bound to.
 
 import * as assert from 'node:assert/strict';
-import { mkdtempSync, rmSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import * as vscode from 'vscode';
+import { projectConnectionId } from '../../src/services/project-connections';
+import { forgetProject } from './project-workspace';
 
 const EXTENSION_ID = 'datanest.datanest';
 
@@ -208,3 +210,97 @@ describe('running queries', () => {
     }
   });
 });
+
+// The lenses that say where a query runs: the connection, and the database where the
+// driver has them. A project connection supplies one without the form.
+describe('lenses of the document target', () => {
+  let root: string;
+  let connection: string;
+
+  before(async () => {
+    await vscode.extensions.getExtension(EXTENSION_ID)?.activate();
+    const folder = vscode.workspace.workspaceFolders?.[0];
+    assert.ok(folder, 'the e2e editor opens a workspace folder');
+    root = folder.uri.fsPath;
+    connection = projectConnectionId(folder.uri.toString(), 'e2e-lens');
+    mkdirSync(join(root, '.vscode'), { recursive: true });
+    writeFileSync(
+      join(root, '.vscode', 'datanest.json'),
+      JSON.stringify({
+        version: 1,
+        connections: [{ id: 'e2e-lens', name: 'E2E lens', driver: 'sqlite', file: 'lens.db' }],
+      }),
+    );
+    await vscode.commands.executeCommand('datanest.tree.refresh');
+  });
+
+  after(async () => {
+    await forgetProject(root, [connection], ['lens.db']);
+  });
+
+  it('registers the database command next to the connection one', async () => {
+    const all = await vscode.commands.getCommands(true);
+    for (const id of ['datanest.query.selectConnection', 'datanest.query.selectDatabase']) {
+      assert.ok(all.includes(id), `${id} is not registered`);
+    }
+  });
+
+  it('puts Run first, then the connection, above every statement', async () => {
+    const document = await vscode.commands.executeCommand<vscode.TextDocument>(
+      'datanest.query.new',
+      connection,
+    );
+    const editor = await vscode.window.showTextDocument(document);
+    await editor.edit((edit) => {
+      edit.insert(new vscode.Position(0, 0), 'SELECT 1;\n\nSELECT 2;\n');
+    });
+    await sleep(500);
+    const lenses = await targetLenses(editor.document.uri);
+    const runs = lenses.filter((lens) => lens.command?.command === 'datanest.query.runRange');
+    const connections = lenses.filter(
+      (lens) => lens.command?.command === 'datanest.query.selectConnection',
+    );
+    // Both statements say where they run, and Run comes first on each.
+    assert.equal(runs.length, 2);
+    assert.equal(connections.length, 2);
+    assert.deepEqual(
+      connections.map((lens) => lens.range.start.line),
+      [0, 2],
+    );
+    assert.match(connections.map((lens) => lens.command?.title ?? '').join(' '), /E2E lens/);
+    assert.deepEqual(
+      lenses
+        .filter((lens) => lens.range.start.line === 0)
+        .map((lens) => lens.command?.command)
+        .slice(0, 2),
+      ['datanest.query.runRange', 'datanest.query.selectConnection'],
+    );
+    // A SQLite file has no databases to switch, so there is no third lens.
+    assert.equal(
+      lenses.filter((lens) => lens.command?.command === 'datanest.query.selectDatabase').length,
+      0,
+    );
+  });
+
+  it('asks for a connection when the query has none', async () => {
+    const editor = await openSql('SELECT 1;\n');
+    await sleep(500);
+    const lenses = await targetLenses(editor.document.uri);
+    const connectionLens = lenses.find(
+      (lens) => lens.command?.command === 'datanest.query.selectConnection',
+    );
+    assert.ok(connectionLens, 'no connection lens');
+    assert.match(connectionLens.command?.title ?? '', /Select connection/);
+    assert.equal(
+      lenses.filter((lens) => lens.command?.command === 'datanest.query.selectDatabase').length,
+      0,
+    );
+  });
+});
+
+async function targetLenses(uri: vscode.Uri): Promise<vscode.CodeLens[]> {
+  return await vscode.commands.executeCommand<vscode.CodeLens[]>(
+    'vscode.executeCodeLensProvider',
+    uri,
+  );
+}

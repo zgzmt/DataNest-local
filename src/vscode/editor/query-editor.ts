@@ -6,6 +6,7 @@ import type { ConnectionStore } from '../../services/connection-store';
 import { type BindingMemory, isKeptDocument, SaveAsMatcher } from '../../services/binding-memory';
 import { COMMAND_IDS } from '../command-ids';
 import { pickConnection, pickDatabase } from '../connection-pick';
+import { filterSupport } from '../../shared/connection';
 import { DocumentBindings, type DocumentBinding } from './document-bindings';
 import { statusView, type StatusTexts } from './status-text';
 
@@ -141,6 +142,45 @@ export class QueryEditors implements vscode.Disposable {
     if (moving && !(await this.settleTransaction(uri))) {
       return undefined;
     }
+    this.bindings.bind(uri, binding);
+    return binding;
+  }
+
+  /**
+   * Asks only for the database, keeping the connection: the database is what people
+   * switch often, while the connection (a server, a tunnel) usually stays. A document
+   * with no connection yet gets the usual pair of questions.
+   */
+  async selectDatabase(): Promise<DocumentBinding | undefined> {
+    const uri = activeSqlDocumentUri();
+    if (uri === undefined) {
+      void vscode.window.showInformationMessage(
+        vscode.l10n.t('Open a SQL query first: DataNest: New Query'),
+      );
+      return undefined;
+    }
+    const current = this.bindings.get(uri);
+    if (current === undefined) {
+      return await this.selectConnection();
+    }
+    const config = this.deps.store.get(current.connectionId);
+    if (config === undefined || !filterSupport(config.driver).databases) {
+      void vscode.window.showInformationMessage(
+        vscode.l10n.t('This connection has no databases to switch'),
+      );
+      return undefined;
+    }
+    const database = await pickDatabase(this.deps.manager, current.connectionId);
+    if (database === undefined) {
+      return undefined;
+    }
+    if (current.database === database) {
+      return current;
+    }
+    if (!(await this.settleTransaction(uri))) {
+      return undefined;
+    }
+    const binding: DocumentBinding = { connectionId: current.connectionId, database };
     this.bindings.bind(uri, binding);
     return binding;
   }

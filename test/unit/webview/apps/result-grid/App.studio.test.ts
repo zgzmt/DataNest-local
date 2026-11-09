@@ -90,9 +90,13 @@ async function open(tab: ResultTab = EDITABLE) {
   const exported = vi.fn();
   const imported = vi.fn();
   const copied = vi.fn();
+  const closed = vi.fn();
+  const kept = vi.fn();
   host.on('exportResult', exported);
   host.on('importInto', imported);
   host.on('copyText', copied);
+  host.on('closeResult', closed);
+  host.on('setKeepResults', kept);
   render(App, { props: { rpc, t: createTranslator('en') } });
   await flush();
   host.emit('state', { tabs: [tab], activeId: tab.id, running: false });
@@ -115,6 +119,8 @@ async function open(tab: ResultTab = EDITABLE) {
     filters,
     follows,
     saves,
+    closed,
+    kept,
   };
 }
 
@@ -476,7 +482,49 @@ describe('export and import', () => {
   });
 });
 
+describe('the result tabs (V16.3)', () => {
+  it('close one result and leave the shown tab alone', async () => {
+    const { host, closed } = await open();
+    host.emit('state', {
+      tabs: [EDITABLE, { ...EDITABLE, id: 'result-2', title: 'second' }],
+      activeId: 'result-2',
+      running: false,
+    });
+    await waitFor(() => {
+      expect(screen.getAllByRole('tab')).toHaveLength(2);
+    });
+    // Every tab carries its own close button, the one shown or not (V16.4).
+    expect(screen.getAllByTestId('tab-close')).toHaveLength(2);
+    await fireEvent.click(nth('tab-close', 0));
+    await waitFor(() => {
+      expect(closed).toHaveBeenCalledWith({ resultId: 'result-1' });
+    });
+    expect(screen.getByRole('tab', { selected: true }).textContent).toContain('second');
+  });
+
+  it('name the close button and hide it while a single result is shown', async () => {
+    await open();
+    expect(screen.queryByTestId('tab-close')).toBeNull();
+    // One result has no tab strip; the page keeps its height for the grid.
+    expect(screen.queryByRole('tab')).toBeNull();
+  });
+});
+
 describe('the view settings', () => {
+  it('show how many results are kept and ask the host to change it (V16.3)', async () => {
+    const { kept } = await open();
+    await fireEvent.click(screen.getByTestId('view-toggle'));
+    expect((await screen.findByTestId('keep-results')).textContent).toBe('20');
+    await fireEvent.click(screen.getByRole('button', { name: 'Keep more results' }));
+    await waitFor(() => {
+      expect(kept).toHaveBeenCalledWith(21);
+    });
+    await fireEvent.click(screen.getByRole('button', { name: 'Keep fewer results' }));
+    await waitFor(() => {
+      expect(kept).toHaveBeenCalledWith(19);
+    });
+  });
+
   it('open from the toolbar and close again', async () => {
     await open();
     await fireEvent.click(screen.getByTestId('view-toggle'));

@@ -1418,3 +1418,125 @@ describe('ResultStore restored tabs (V13.12)', () => {
     expect(store.forDocument(FILE)).toHaveLength(MAX_RESULTS_PER_DOCUMENT);
   });
 });
+
+describe('how many results a document keeps (V16.3)', () => {
+  const ids = (store: ResultStore): string[] => store.forDocument(DOC).map((item) => item.id);
+
+  it('keeps the newest ones and closes the oldest, as the setting says', () => {
+    const store = new ResultStore({ maxResults: () => 5 });
+    for (let index = 0; index < 6; index += 1) {
+      store.add(result({ statement: `SELECT ${index}` }));
+    }
+    expect(store.forDocument(DOC).map((item) => item.statement)).toEqual([
+      'SELECT 1',
+      'SELECT 2',
+      'SELECT 3',
+      'SELECT 4',
+      'SELECT 5',
+    ]);
+  });
+
+  it('asks the setting on every run, so a change works live', () => {
+    let keep = 3;
+    const store = new ResultStore({ maxResults: () => keep });
+    for (let index = 0; index < 4; index += 1) {
+      store.add(result());
+    }
+    expect(ids(store)).toHaveLength(3);
+    keep = 2;
+    store.add(result());
+    expect(ids(store)).toHaveLength(2);
+  });
+
+  it('never goes below one result, whatever the setting says', () => {
+    const store = new ResultStore({ maxResults: () => 0 });
+    store.add(result());
+    store.add(result());
+    expect(ids(store)).toHaveLength(1);
+  });
+
+  it('leaves pinned results alone, so a document full of pins grows', () => {
+    const store = new ResultStore({ maxResults: () => 2 });
+    const pinned = store.add(result());
+    store.pin(pinned.id);
+    store.add(result());
+    store.add(result());
+    // The pinned one stays and the limit still holds: an unpinned neighbour went instead.
+    expect(store.get(pinned.id)).toBeDefined();
+    expect(ids(store)).toHaveLength(2);
+  });
+
+  it('applies a smaller limit at once, without waiting for a run', () => {
+    let keep = 5;
+    const store = new ResultStore({ maxResults: () => keep });
+    for (let index = 0; index < 5; index += 1) {
+      store.add(result());
+    }
+    const changed = vi.fn();
+    store.onDidChange(changed);
+    keep = 2;
+    store.trimAll();
+    expect(ids(store)).toHaveLength(2);
+    expect(changed).toHaveBeenCalledWith(DOC);
+  });
+
+  it('keeps a pinned result when the limit shrinks around it', () => {
+    let keep = 4;
+    const store = new ResultStore({ maxResults: () => keep });
+    const pinned = store.add(result());
+    store.pin(pinned.id);
+    store.add(result());
+    store.add(result());
+    store.add(result());
+    keep = 2;
+    store.trimAll();
+    expect(store.get(pinned.id)).toBeDefined();
+    expect(ids(store)).toHaveLength(2);
+  });
+});
+
+describe('closing one result (V16.3)', () => {
+  const ids = (store: ResultStore): string[] => store.forDocument(DOC).map((item) => item.id);
+
+  it('drops the result, its rows and its tab', () => {
+    const store = new ResultStore();
+    const a = store.add(result());
+    const b = store.add(result());
+    expect(store.drop(a.id)).toBe(true);
+    expect(store.get(a.id)).toBeUndefined();
+    expect(store.window(a.id, 0, 10)).toBeUndefined();
+    expect(ids(store)).toEqual([b.id]);
+  });
+
+  it('answers false for a result that is not there', () => {
+    expect(new ResultStore().drop('result-404')).toBe(false);
+  });
+
+  it('keeps nothing in the history: a closed tab stays closed', () => {
+    const store = new ResultStore();
+    const a = store.add(result());
+    store.drop(a.id);
+    expect(store.history(DOC)).toEqual([]);
+  });
+
+  it('tells the document, and the others stay as they were', () => {
+    const store = new ResultStore();
+    const a = store.add(result());
+    store.add(result({ documentUri: 'other' }));
+    const changed = vi.fn();
+    store.onDidChange(changed);
+    store.drop(a.id);
+    expect(changed).toHaveBeenCalledTimes(1);
+    expect(changed).toHaveBeenCalledWith(DOC);
+    expect(store.forDocument(DOC)).toEqual([]);
+    expect(store.forDocument('other')).toHaveLength(1);
+  });
+
+  it('closes a pinned result too: the user asked for it', () => {
+    const store = new ResultStore();
+    const a = store.add(result());
+    store.pin(a.id);
+    expect(store.drop(a.id)).toBe(true);
+    expect(store.get(a.id)).toBeUndefined();
+  });
+});

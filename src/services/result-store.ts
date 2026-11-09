@@ -193,6 +193,11 @@ export const MAX_KEPT_CELLS = 20_000_000;
 export interface ResultStoreOptions {
   /** Cells kept across all results; `MAX_KEPT_CELLS` by default. */
   readonly maxCells?: number;
+  /**
+   * How many results one document keeps (`datanest.results.keep`, V16.3). Asked on every
+   * run, so the setting works live; `MAX_RESULTS_PER_DOCUMENT` by default.
+   */
+  readonly maxResults?: () => number;
   /** How a long sort or search lets the host breathe; tests make it deterministic. */
   readonly sortPause?: PauseOptions;
 }
@@ -209,6 +214,7 @@ export class ResultStore {
   private readonly archive = new Map<string, StoredResult[]>();
   private readonly listeners = new Set<(documentUri: string) => void>();
   private readonly maxCells: number;
+  private readonly maxResults: () => number;
   private readonly sortPause: PauseOptions | undefined;
   /** Which result took the place of a replaced one, so a page can follow its active tab. */
   private readonly successors = new Map<string, string>();
@@ -216,6 +222,7 @@ export class ResultStore {
 
   constructor(options: ResultStoreOptions = {}) {
     this.maxCells = options.maxCells ?? MAX_KEPT_CELLS;
+    this.maxResults = options.maxResults ?? (() => MAX_RESULTS_PER_DOCUMENT);
     this.sortPause = options.sortPause;
   }
 
@@ -300,22 +307,27 @@ export class ResultStore {
   }
 
   /**
-   * Drops the oldest unpinned results of a document until it is within the limit. The
-   * result just added or brought back (`keep`) stays, so a document full of pins grows.
+   * Drops the oldest unpinned results of a document until it is within the limit
+   * (`datanest.results.keep`). The result just added or brought back (`keep`) stays, so a
+   * document full of pins grows. Returns whether anything was dropped.
    */
-  private enforceLimit(ids: string[], keep: string): void {
-    while (ids.length > MAX_RESULTS_PER_DOCUMENT) {
+  private enforceLimit(ids: string[], keep: string): boolean {
+    const limit = Math.max(1, Math.trunc(this.maxResults()));
+    let dropped = false;
+    while (ids.length > limit) {
       const at = ids.findIndex(
         (other) => other !== keep && this.results.get(other)?.pinned !== true,
       );
       if (at === -1) {
-        return;
+        return dropped;
       }
-      const [dropped] = ids.splice(at, 1);
-      if (dropped !== undefined) {
-        this.results.delete(dropped);
+      const [gone] = ids.splice(at, 1);
+      if (gone !== undefined) {
+        this.results.delete(gone);
+        dropped = true;
       }
     }
+    return dropped;
   }
 
   /** Puts a new id into a document's list, dropping what the placement replaces. */
@@ -834,6 +846,44 @@ export class ResultStore {
   allRows(id: string): ResultRow[] | undefined {
     const stored = this.results.get(id);
     return stored === undefined ? undefined : [...stored.rows];
+  }
+
+  /**
+   * Closes one result of a document (V16.3): its tab and its rows go away. Nothing lands in
+   * the history — closing a tab is a decision, not a re-run pushing a result aside.
+   */
+  drop(id: string): boolean {
+    const stored = this.results.get(id);
+    if (stored === undefined) {
+      return false;
+    }
+    this.results.delete(id);
+    const ids = this.byDocument.get(stored.documentUri);
+    const at = ids === undefined ? -1 : ids.indexOf(id);
+    if (ids !== undefined && at !== -1) {
+      ids.splice(at, 1);
+      if (ids.length === 0) {
+        this.byDocument.delete(stored.documentUri);
+      }
+    }
+    this.notify(stored.documentUri);
+    return true;
+  }
+
+  /**
+   * Applies the per-document limit now, for a setting that was made smaller: the oldest
+   * unpinned results of every document go, the newest ones stay (V16.3).
+   */
+  trimAll(): void {
+    for (const [documentUri, ids] of [...this.byDocument]) {
+      const newest = ids.at(-1);
+      if (newest === undefined) {
+        continue;
+      }
+      if (this.enforceLimit(ids, newest)) {
+        this.notify(documentUri);
+      }
+    }
   }
 
   /** Drops every result of a document, e.g. when its editor closes. */

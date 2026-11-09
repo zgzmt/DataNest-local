@@ -1250,6 +1250,7 @@ export function registerCommands(deps: CommandDeps): vscode.Disposable[] {
       );
     },
     [COMMAND_IDS.selectConnection]: async () => await deps.editors.selectConnection(),
+    [COMMAND_IDS.selectDatabase]: async () => await deps.editors.selectDatabase(),
     [COMMAND_IDS.runQuery]: runCommands.run,
     [COMMAND_IDS.runAll]: runCommands.runAll,
     [COMMAND_IDS.runRange]: runCommands.runRange,

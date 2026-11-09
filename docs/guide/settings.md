@@ -15,6 +15,7 @@ once, without a restart.
 | `datanest.results.maxColumnWidth` | `420` | 120 – 1600 px | The widest a column of the result grid gets on its own. Dragging a separator still makes it wider; **Fit to Content** may go up to 800 px, or further when this limit is larger. |
 | `datanest.results.restore` | `true` | on / off | After a restart, the result tabs of a saved SQL file come back, empty, with a **Run** button. Only the statement and its connection are kept — never rows or passwords — and only statements that merely read. |
 | `datanest.results.restoreRun` | `false` | on / off | Run the restored tabs again on their own. Only statements that merely read, and never on a production or switched-off connection. |
+| `datanest.results.keep` | `20` | 1 – 100 | How many results one query editor keeps. One more than this closes the oldest tab, so the newest results are always the ones left. A pinned result stays; any tab can also be closed by hand with its **×**. The same number is set in the result page, in **View settings**. |
 | `datanest.ai.enabled` | `true` | on / off | Let the editor's language model use DataNest: four tools and the `@datanest` chat participant (see [the assistant](assistant.md)). |
 | `datanest.queryTimeout` | `0` | 0 – 86 400 s | Seconds a statement may run before DataNest cancels it; `0` means no limit. A connection's own query timeout wins over this. |
 | `datanest.transactionMode` | `auto` | `auto`, `manual` | How a new SQL editor commits: every statement at once, or in a transaction that waits for **Commit** or **Roll Back**. |

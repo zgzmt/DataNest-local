@@ -94,3 +94,15 @@ export function followActive(
   }
   return successorOf(activeId);
 }
+
+/**
+ * The results that appeared since the page last looked, oldest first (V16.4). A run adds
+ * its results one by one, so each update sees the ones it brought; the newest of them is
+ * the tab the user wants to see, even if they were reading an older result.
+ */
+export function addedResults(
+  seen: ReadonlySet<string>,
+  summaries: readonly Pick<ResultSummary, 'id'>[],
+): string[] {
+  return summaries.filter((summary) => !seen.has(summary.id)).map((summary) => summary.id);
+}

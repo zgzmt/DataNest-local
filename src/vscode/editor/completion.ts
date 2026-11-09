@@ -5,6 +5,7 @@ import { ConnectionManager } from '../../services/connection-manager';
 import type { ConnectionStore } from '../../services/connection-store';
 import type { MetadataCache } from '../../services/metadata-cache';
 import type { MetadataReader } from '../../drivers/driver';
+import { tableClauseBefore } from '../../core/sql/completion-context';
 import { type CompletionEntry, completionEntries, type EntryKind } from './completion-items';
 import { SQL_LANGUAGE_ID } from './query-editor';
 import type { QueryEditors } from './query-editor';
@@ -19,8 +20,13 @@ export interface CompletionDeps {
   readonly enabled?: () => boolean;
 }
 
-/** Characters that trigger completion on their own. */
-export const TRIGGER_CHARACTERS = ['.'];
+/**
+ * Characters that trigger completion on their own. `.` asks for what follows a name; a
+ * space or a newline asks for a table when it ends `FROM`, `JOIN`, `INTO`, `UPDATE` or
+ * `TABLE` (`tableClauseBefore`), which is how the list opens right after `FROM ` instead
+ * of after the first letter of a table.
+ */
+export const TRIGGER_CHARACTERS = ['.', ' ', '\n'];
 
 const KINDS: Readonly<Record<EntryKind, vscode.CompletionItemKind>> = {
   keyword: vscode.CompletionItemKind.Keyword,
@@ -50,9 +56,20 @@ export class SqlCompletionProvider implements vscode.CompletionItemProvider {
   async provideCompletionItems(
     document: vscode.TextDocument,
     position: vscode.Position,
-  ): Promise<vscode.CompletionItem[]> {
+    _token: vscode.CancellationToken,
+    context: vscode.CompletionContext,
+  ): Promise<vscode.CompletionItem[] | undefined> {
     if (document.languageId !== SQL_LANGUAGE_ID || this.deps.enabled?.() === false) {
       return [];
+    }
+    // The editor asks on every space and newline: answer only where a table name belongs,
+    // so the list does not jump in the middle of an expression.
+    if (
+      context.triggerKind === vscode.CompletionTriggerKind.TriggerCharacter &&
+      isSeparator(context.triggerCharacter) &&
+      !tableClauseBefore(document.getText(), document.offsetAt(position))
+    ) {
+      return undefined;
     }
     const documentUri = document.uri.toString();
     const binding = this.deps.editors.bindings.get(documentUri);
@@ -100,4 +117,9 @@ function toItem(entry: CompletionEntry): vscode.CompletionItem {
       entry.snippet === true ? new vscode.SnippetString(entry.insertText) : entry.insertText;
   }
   return item;
+}
+
+/** A space or a newline, the two separators that may end a clause keyword. */
+function isSeparator(character: string | undefined): boolean {
+  return character === ' ' || character === '\n';
 }

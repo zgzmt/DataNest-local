@@ -61,6 +61,8 @@ export default defineConfig({
           name: 'webview',
           include: ['test/unit/webview/**/*.test.ts'],
           environment: 'jsdom',
+          // jsdom lacks scrolling, which the result page uses (V16.4).
+          setupFiles: ['test/helpers/webview/setup.ts'],
         },
       },
     ],
