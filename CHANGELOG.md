@@ -320,7 +320,7 @@ with a screen reader, documented — and a way to tell us what does not work.
 - A chart's values can be read with the arrow keys, by a screen reader too.
 - Documentation: a user guide to every feature, the keyboard shortcuts and all settings, a
   FAQ with fixes for common connection problems, and a guide to adding a database driver
-  ([docs](https://github.com/Muhammadali1620/DataNest/blob/main/docs/index.md)).
+  ([docs](https://github.com/zgzmt/DataNest-local/blob/main/docs/index.md)).
 - **Report a Problem…** (Command Palette, or the "…" menu of the Connections view) opens
   the bug form on GitHub with the DataNest, editor and system versions filled in —
   nothing about your connections.

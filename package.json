@@ -8,12 +8,12 @@
   "icon": "resources/icon.png",
   "repository": {
     "type": "git",
-    "url": "https://github.com/Muhammadali1620/DataNest.git"
+    "url": "https://github.com/zgzmt/DataNest-local.git"
   },
   "bugs": {
-    "url": "https://github.com/Muhammadali1620/DataNest/issues"
+    "url": "https://github.com/zgzmt/DataNest-local/issues"
   },
-  "homepage": "https://github.com/Muhammadali1620/DataNest#readme",
+  "homepage": "https://github.com/zgzmt/DataNest-local#readme",
   "categories": [
     "Data Science",
     "Visualization",

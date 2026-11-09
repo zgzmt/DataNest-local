@@ -18,4 +18,4 @@ Local environment:
 - Docker containers and databases we start use host ports **7000–7999 only**, bound to `127.0.0.1`. Compose project name `datanest`, container names `datanest-*`. Never stop, remove or reconfigure other containers on this machine — the owner uses them for other work (e.g. `gamezone_*`). Use `npm run db:up` / `db:down`, which touch only our project.
 - `.env` (gitignored, template in `.env.example`) holds `OPEN_VSX_TOKEN` for publishing to Open VSX with `ovsx`. Never print, log or commit it; publishing is done only when the owner asks.
 - VS Marketplace: no token yet, the owner uploads the `.vsix` manually.
-- GitHub: `git@github.com:Muhammadali1620/DataNest.git` (branch `main`).
+- GitHub: `git@github.com:zgzmt/DataNest-local.git` (branch `main`).

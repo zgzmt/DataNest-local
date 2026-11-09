@@ -2,7 +2,7 @@
 
 [![Open VSX version](https://img.shields.io/open-vsx/v/datanest/datanest?label=Open%20VSX)](https://open-vsx.org/extension/datanest/datanest)
 [![Open VSX downloads](https://img.shields.io/open-vsx/dt/datanest/datanest)](https://open-vsx.org/extension/datanest/datanest)
-[![CI](https://github.com/Muhammadali1620/DataNest/actions/workflows/ci.yml/badge.svg)](https://github.com/Muhammadali1620/DataNest/actions/workflows/ci.yml)
+[![CI](https://github.com/zgzmt/DataNest-local/actions/workflows/ci.yml/badge.svg)](https://github.com/zgzmt/DataNest-local/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 
 **DataNest is a free, open-source database client for VS Code and its forks (VSCodium, Cursor,
@@ -12,11 +12,11 @@ Redis, Elasticsearch, libSQL and InfluxDB** — with no account, no limits and n
 It also works with **servers**: browse and edit their files over SFTP, open a terminal and
 reuse the same saved SSH logins for database tunnels.
 
-![DataNest: database tree, data grid with filters, record panel](https://raw.githubusercontent.com/Muhammadali1620/DataNest/main/docs/images/overview.png)
+![DataNest: database tree, data grid with filters, record panel](https://raw.githubusercontent.com/zgzmt/DataNest-local/main/docs/images/overview.png)
 
 **Install:** search for **DataNest** in the Extensions view, or open it on
 [Open VSX](https://open-vsx.org/extension/datanest/datanest). A `.vsix` is attached to every
-[release](https://github.com/Muhammadali1620/DataNest/releases).
+[release](https://github.com/zgzmt/DataNest-local/releases).
 
 ## Quick start
 
@@ -42,43 +42,43 @@ page is in English; the short summaries below are for everyone else.
 
 ## Screenshots
 
-![Connect to any database: MySQL, PostgreSQL, SQLite, SQL Server, MongoDB, Redis](https://raw.githubusercontent.com/Muhammadali1620/DataNest/main/docs/images/connection.png)
+![Connect to any database: MySQL, PostgreSQL, SQLite, SQL Server, MongoDB, Redis](https://raw.githubusercontent.com/zgzmt/DataNest-local/main/docs/images/connection.png)
 
 **EN** Connect to any database · **RU** Подключение к любой базе данных · **UZ** Istalgan ma’lumotlar bazasiga ulanish · **ZH** 连接任意数据库 · **ES** Conéctate a cualquier base de datos · **TR** Herhangi bir veritabanına bağlanın · **DE** Mit jeder Datenbank verbinden · **FR** Connectez-vous à n’importe quelle base · **PT** Conecte-se a qualquer banco de dados · **AR** اتصل بأي قاعدة بيانات
 
-![Database tree, data grid with AND/OR filters, record panel](https://raw.githubusercontent.com/Muhammadali1620/DataNest/main/docs/images/overview.png)
+![Database tree, data grid with AND/OR filters, record panel](https://raw.githubusercontent.com/zgzmt/DataNest-local/main/docs/images/overview.png)
 
 **EN** Browse tables, filter, edit data · **RU** Таблицы, фильтры, правка данных · **UZ** Jadvallar, filtrlar, ma’lumotlarni tahrirlash · **ZH** 浏览表、筛选并编辑数据 · **ES** Explora tablas, filtra y edita datos · **TR** Tabloları gezin, filtreleyin, düzenleyin · **DE** Tabellen durchsuchen, filtern, bearbeiten · **FR** Parcourir, filtrer et modifier les données · **PT** Navegue, filtre e edite os dados · **AR** تصفح الجداول وصفِّ البيانات وعدّلها
 
-![SQL editor with query results](https://raw.githubusercontent.com/Muhammadali1620/DataNest/main/docs/images/sql.png)
+![SQL editor with query results](https://raw.githubusercontent.com/zgzmt/DataNest-local/main/docs/images/sql.png)
 
 **EN** SQL editor with results · **RU** SQL-редактор и результаты · **UZ** SQL muharriri va natijalar · **ZH** SQL 编辑器与结果 · **ES** Editor SQL con resultados · **TR** SQL düzenleyici ve sonuçlar · **DE** SQL-Editor mit Ergebnissen · **FR** Éditeur SQL et résultats · **PT** Editor SQL com resultados · **AR** محرر SQL مع النتائج
 
-![Table designer: columns, indexes, foreign keys, DDL](https://raw.githubusercontent.com/Muhammadali1620/DataNest/main/docs/images/properties.png)
+![Table designer: columns, indexes, foreign keys, DDL](https://raw.githubusercontent.com/zgzmt/DataNest-local/main/docs/images/properties.png)
 
 **EN** Table designer: columns, indexes, keys · **RU** Конструктор таблиц: колонки, индексы, ключи · **UZ** Jadval dizayneri: ustunlar, indekslar, kalitlar · **ZH** 表设计器：列、索引、键 · **ES** Diseñador de tablas: columnas, índices, claves · **TR** Tablo tasarımcısı: sütun, dizin, anahtar · **DE** Tabellen-Designer: Spalten, Indizes, Schlüssel · **FR** Concepteur de tables : colonnes, index, clés · **PT** Designer de tabelas: colunas, índices, chaves · **AR** مصمم الجداول: الأعمدة والفهارس والمفاتيح
 
-![ER diagram of a schema](https://raw.githubusercontent.com/Muhammadali1620/DataNest/main/docs/images/er.png)
+![ER diagram of a schema](https://raw.githubusercontent.com/zgzmt/DataNest-local/main/docs/images/er.png)
 
 **EN** ER diagram of the database · **RU** ER-диаграмма базы данных · **UZ** Ma’lumotlar bazasi ER diagrammasi · **ZH** 数据库 ER 图 · **ES** Diagrama ER de la base de datos · **TR** Veritabanı ER diyagramı · **DE** ER-Diagramm der Datenbank · **FR** Diagramme ER de la base · **PT** Diagrama ER do banco de dados · **AR** مخطط ER لقاعدة البيانات
 
-![Manager: live server dashboard, processes, dump, structure sync](https://raw.githubusercontent.com/Muhammadali1620/DataNest/main/docs/images/dashboard.png)
+![Manager: live server dashboard, processes, dump, structure sync](https://raw.githubusercontent.com/zgzmt/DataNest-local/main/docs/images/dashboard.png)
 
 **EN** Live server dashboard · **RU** Мониторинг сервера в реальном времени · **UZ** Server monitoringi real vaqtda · **ZH** 实时服务器监控 · **ES** Panel del servidor en tiempo real · **TR** Canlı sunucu panosu · **DE** Live-Serverüberwachung · **FR** Tableau de bord du serveur en direct · **PT** Painel do servidor em tempo real · **AR** لوحة مراقبة الخادم المباشرة
 
-![Built-in tools: colours, QR codes, images, network, processes](https://raw.githubusercontent.com/Muhammadali1620/DataNest/main/docs/images/tools.png)
+![Built-in tools: colours, QR codes, images, network, processes](https://raw.githubusercontent.com/zgzmt/DataNest-local/main/docs/images/tools.png)
 
 **EN** Built-in tools: colors, QR, images · **RU** Встроенные инструменты: цвета, QR, изображения · **UZ** Ichki vositalar: ranglar, QR, rasmlar · **ZH** 内置工具：颜色、二维码、图片 · **ES** Herramientas: colores, QR, imágenes · **TR** Yerleşik araçlar: renk, QR, görsel · **DE** Werkzeuge: Farben, QR, Bilder · **FR** Outils : couleurs, QR, images · **PT** Ferramentas: cores, QR, imagens · **AR** أدوات مدمجة: الألوان ورمز QR والصور
 
-![Servers: remote files, a file open in the editor and a terminal on the server](https://raw.githubusercontent.com/Muhammadali1620/DataNest/main/docs/images/servers.png)
+![Servers: remote files, a file open in the editor and a terminal on the server](https://raw.githubusercontent.com/zgzmt/DataNest-local/main/docs/images/servers.png)
 
 **EN** Servers: files over SFTP, editor and terminal · **RU** Серверы: файлы по SFTP, редактор и терминал · **UZ** Serverlar: SFTP orqali fayllar, muharrir va terminal · **ZH** 服务器：通过 SFTP 管理文件，编辑器与终端 · **ES** Servidores: archivos por SFTP, editor y terminal · **TR** Sunucular: SFTP dosyaları, düzenleyici ve terminal · **DE** Server: Dateien über SFTP, Editor und Terminal · **FR** Serveurs : fichiers via SFTP, éditeur et terminal · **PT** Servidores: arquivos via SFTP, editor e terminal · **AR** الخوادم: ملفات عبر SFTP ومحرر وطرفية
 
-![New server: jump hosts filled from saved servers, the usual ports already typed in](https://raw.githubusercontent.com/Muhammadali1620/DataNest/main/docs/images/server-form.png)
+![New server: jump hosts filled from saved servers, the usual ports already typed in](https://raw.githubusercontent.com/zgzmt/DataNest-local/main/docs/images/server-form.png)
 
 **EN** Add a server: jump hosts from saved servers · **RU** Добавление сервера: SSH-вход, промежуточные хосты, прокси · **UZ** Server qo‘shish: SSH kirish, oraliq xostlar, proksi · **ZH** 添加服务器：SSH 登录、跳板机、代理 · **ES** Añadir un servidor: acceso SSH, saltos y proxy · **TR** Sunucu ekleme: SSH girişi, atlama sunucuları, proxy · **DE** Server hinzufügen: SSH-Login, Sprunghosts, Proxy · **FR** Ajouter un serveur : connexion SSH, rebonds, proxy · **PT** Adicionar servidor: login SSH, saltos, proxy · **AR** إضافة خادم: تسجيل دخول SSH ومضيفات وسيطة ووكيل
 
-![A database connection through a saved server: pick it and the SSH login is filled in](https://raw.githubusercontent.com/Muhammadali1620/DataNest/main/docs/images/tunnel-server.png)
+![A database connection through a saved server: pick it and the SSH login is filled in](https://raw.githubusercontent.com/zgzmt/DataNest-local/main/docs/images/tunnel-server.png)
 
 **EN** Reuse a saved server in an SSH tunnel · **RU** Сохранённый сервер в SSH-туннеле подключения · **UZ** Saqlangan serverni SSH tunnelda qayta ishlatish · **ZH** 在 SSH 隧道中复用已保存的服务器 · **ES** Reutiliza un servidor guardado en el túnel SSH · **TR** Kayıtlı sunucuyu SSH tünelinde kullanın · **DE** Gespeicherten Server im SSH-Tunnel wiederverwenden · **FR** Réutiliser un serveur enregistré dans le tunnel SSH · **PT** Reutilize um servidor salvo no túnel SSH · **AR** إعادة استخدام خادم محفوظ في نفق SSH
 

@@ -5,7 +5,7 @@
 - **Open VSX** (VSCodium, Cursor, Windsurf and other forks): search for *DataNest* in the
   Extensions view, or open [its page](https://open-vsx.org/extension/datanest/datanest).
 - **Any editor**: download the `.vsix` attached to a
-  [release](https://github.com/Muhammadali1620/DataNest/releases) and run
+  [release](https://github.com/zgzmt/DataNest-local/releases) and run
   **Extensions: Install from VSIX…** from the Command Palette.
 
 DataNest needs VS Code 1.105 or a fork based on it. It ships no native modules, so the same

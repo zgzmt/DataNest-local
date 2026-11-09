@@ -32,7 +32,7 @@ no telemetry.
 
 - [FAQ and troubleshooting](faq.md)
 - Report a problem or ask for a feature on
-  [GitHub](https://github.com/Muhammadali1620/DataNest/issues).
+  [GitHub](https://github.com/zgzmt/DataNest-local/issues).
 
 ## Contributing
 

@@ -73,9 +73,9 @@ describe('package.json manifest', () => {
   it('links the GitHub repository so vsce can rewrite README links', () => {
     expect(manifest.repository).toEqual({
       type: 'git',
-      url: 'https://github.com/Muhammadali1620/DataNest.git',
+      url: 'https://github.com/zgzmt/DataNest-local.git',
     });
-    expect(manifest.bugs.url).toBe('https://github.com/Muhammadali1620/DataNest/issues');
+    expect(manifest.bugs.url).toBe('https://github.com/zgzmt/DataNest-local/issues');
   });
 
   it('points main to the CommonJS bundle (D7)', () => {

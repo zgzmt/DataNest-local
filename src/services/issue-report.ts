@@ -3,7 +3,7 @@
 // queries goes in: what to share beyond the versions is the reporter's choice.
 
 /** The new-issue page of the repository; package.json `bugs.url` plus `/new`. */
-export const NEW_ISSUE_URL = 'https://github.com/Muhammadali1620/DataNest/issues/new';
+export const NEW_ISSUE_URL = 'https://github.com/zgzmt/DataNest-local/issues/new';
 
 /** The issue form in .github/ISSUE_TEMPLATE whose fields the link fills. */
 export const BUG_TEMPLATE = 'bug_report.yml';
