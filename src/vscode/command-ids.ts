@@ -65,6 +65,8 @@ export const COMMAND_IDS = {
   cancelQuery: 'datanest.query.cancel',
   /** Shows the plan of the statement under the cursor (V8.2). */
   explainQuery: 'datanest.query.explain',
+  /** Shows the plan of one statement by its offsets; used by the CodeLens above it (V16.5). */
+  explainRange: 'datanest.query.explainRange',
   /** Runs the statement under the cursor for its real plan (V8.2). */
   explainAnalyze: 'datanest.query.explainAnalyze',
   /** Saves the open transaction of the active editor (V4.8). */

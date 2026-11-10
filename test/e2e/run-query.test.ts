@@ -52,6 +52,7 @@ describe('running queries', () => {
       'datanest.query.run',
       'datanest.query.runAll',
       'datanest.query.runRange',
+      'datanest.query.explainRange',
       'datanest.query.cancel',
     ]) {
       assert.ok(all.includes(id), `${id} is not registered`);
@@ -245,7 +246,7 @@ describe('lenses of the document target', () => {
     }
   });
 
-  it('puts Run first, then the connection, above every statement', async () => {
+  it('puts Run first, then Explain, then the connection, above every statement', async () => {
     const document = await vscode.commands.executeCommand<vscode.TextDocument>(
       'datanest.query.new',
       connection,
@@ -257,11 +258,16 @@ describe('lenses of the document target', () => {
     await sleep(500);
     const lenses = await targetLenses(editor.document.uri);
     const runs = lenses.filter((lens) => lens.command?.command === 'datanest.query.runRange');
+    const explains = lenses.filter(
+      (lens) => lens.command?.command === 'datanest.query.explainRange',
+    );
     const connections = lenses.filter(
       (lens) => lens.command?.command === 'datanest.query.selectConnection',
     );
-    // Both statements say where they run, and Run comes first on each.
+    // Both statements can be run, explained, and say where they run, Run coming first.
     assert.equal(runs.length, 2);
+    assert.equal(explains.length, 2);
+    assert.equal(explains[0]?.command?.title, '$(list-tree) Explain');
     assert.equal(connections.length, 2);
     assert.deepEqual(
       connections.map((lens) => lens.range.start.line),
@@ -272,10 +278,10 @@ describe('lenses of the document target', () => {
       lenses
         .filter((lens) => lens.range.start.line === 0)
         .map((lens) => lens.command?.command)
-        .slice(0, 2),
-      ['datanest.query.runRange', 'datanest.query.selectConnection'],
+        .slice(0, 3),
+      ['datanest.query.runRange', 'datanest.query.explainRange', 'datanest.query.selectConnection'],
     );
-    // A SQLite file has no databases to switch, so there is no third lens.
+    // A SQLite file has no databases to switch, so there is no database lens.
     assert.equal(
       lenses.filter((lens) => lens.command?.command === 'datanest.query.selectDatabase').length,
       0,

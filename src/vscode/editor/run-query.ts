@@ -20,6 +20,7 @@ import type { DocumentBinding } from './document-bindings';
 import type { QueryEditors } from './query-editor';
 import { SQL_LANGUAGE_ID } from './query-editor';
 import { targetLenses, type TargetLenses, type TargetLensTexts } from './target-lenses';
+import { statementRangeOf, type StatementRange } from './statement-range';
 
 export interface RunQueryDeps {
   readonly runner: QueryRunner;
@@ -127,13 +128,6 @@ export function sqlTextRunner(deps: RunQueryDeps): SqlTextRunner {
   };
 }
 
-/** A range the CodeLens passes along, as plain numbers so it survives commands. */
-export interface RunRangeArgs {
-  readonly documentUri: string;
-  readonly start: number;
-  readonly end: number;
-}
-
 export function runCommandHandlers(
   deps: RunQueryDeps,
 ): Record<RunCommandName, (args?: unknown) => unknown> {
@@ -214,7 +208,7 @@ export function runCommandHandlers(
 
     /** Runs one statement by its offsets; used by the CodeLens above it. */
     runRange: async (args?: unknown) => {
-      const range = asRunRange(args);
+      const range = statementRangeOf(args);
       if (range === undefined) {
         return undefined;
       }
@@ -426,22 +420,6 @@ function report(outcome: RunOutcome, logger: Logger): void {
   void vscode.window.setStatusBarMessage(`DataNest: ${summary}`, 5000);
 }
 
-function asRunRange(args: unknown): RunRangeArgs | undefined {
-  if (typeof args !== 'object' || args === null) {
-    return undefined;
-  }
-  const { documentUri, start, end } = args as Partial<RunRangeArgs>;
-  if (
-    typeof documentUri !== 'string' ||
-    typeof start !== 'number' ||
-    typeof end !== 'number' ||
-    end < start
-  ) {
-    return undefined;
-  }
-  return { documentUri, start, end };
-}
-
 function targetLensTexts(): TargetLensTexts {
   return {
     pickConnection: vscode.l10n.t('$(plug) Select connection'),
@@ -508,16 +486,23 @@ export class RunCodeLensProvider implements vscode.CodeLensProvider {
         document.positionAt(statement.start),
         document.positionAt(statement.end),
       );
-      const args: RunRangeArgs = {
+      const args: StatementRange = {
         documentUri,
         start: statement.start,
         end: statement.end,
       };
-      // Run first: the same range for all three, so the order given here is the order shown.
+      // Run first, then Explain: the same range for all of them, so the order given here
+      // is the order the editor shows.
       return [
         new vscode.CodeLens(range, {
           title: vscode.l10n.t('$(play) Run'),
           command: COMMAND_IDS.runRange,
+          arguments: [args],
+        }),
+        new vscode.CodeLens(range, {
+          title: vscode.l10n.t('$(list-tree) Explain'),
+          tooltip: vscode.l10n.t('Show the plan of this statement without running it'),
+          command: COMMAND_IDS.explainRange,
           arguments: [args],
         }),
         ...lensList(target, range),

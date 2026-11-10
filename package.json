@@ -368,6 +368,12 @@
         "icon": "$(list-tree)"
       },
       {
+        "command": "datanest.query.explainRange",
+        "title": "%commands.query.explainRange.title%",
+        "category": "DataNest",
+        "icon": "$(list-tree)"
+      },
+      {
         "command": "datanest.query.explainAnalyze",
         "title": "%commands.query.explainAnalyze.title%",
         "category": "DataNest"

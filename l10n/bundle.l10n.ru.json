@@ -41,6 +41,8 @@
   "{0} rows in {1} ms": "строк: {0}, за {1} мс",
   "{0} rows affected in {1} ms": "затронуто строк: {0}, за {1} мс",
   "$(play) Run": "$(play) Выполнить",
+  "$(list-tree) Explain": "$(list-tree) Объяснить",
+  "Show the plan of this statement without running it": "Показать план этого оператора, не выполняя его",
   "$(sync~spin) Running… {0}": "$(sync~spin) Выполняется… {0}",
   "DataNest: click to cancel the running query": "DataNest: нажмите, чтобы отменить запрос",
   "Results": "Результаты",

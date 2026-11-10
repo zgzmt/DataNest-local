@@ -69,6 +69,9 @@ alone: the placeholders in them belong to the server.
   `CREATE TABLE`, and after a `.`; anywhere else `Ctrl+Space` asks for it. Names come from the
   structure DataNest already read for the tree — the server is asked once per list, not on every
   keystroke.
+- Above every statement the lens row shows **Run**, **Explain** and where the query runs:
+  **Explain** opens the plan of that very statement, without running it and without moving
+  the cursor (see [the plan](tools.md)).
 - Hover over a table or column for its type, keys and comment; `F12` opens its DDL.
 - **Format Document** formats in the connection's dialect; the `datanest.format.*`
   [settings](settings.md) choose the style.

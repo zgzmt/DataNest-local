@@ -21,6 +21,7 @@ import { QueryPlanModel } from '../panels/query-plan-model';
 import { QueryPlanPanel } from '../panels/query-plan-panel';
 import type { QueryEditors } from './query-editor';
 import { SQL_LANGUAGE_ID } from './query-editor';
+import { statementRangeOf, type StatementRange } from './statement-range';
 
 export interface ExplainQueryDeps {
   readonly extensionUri: vscode.Uri;
@@ -39,12 +40,18 @@ export interface ExplainQueryDeps {
 export function explainCommandHandlers(deps: ExplainQueryDeps): {
   explain: () => Promise<void>;
   explainAnalyze: () => Promise<void>;
+  /** Explains the statement a lens sits above, without moving the cursor (V16.5). */
+  explainRange: (args?: unknown) => Promise<void>;
 } {
   /** Which server a connection talks to does not change while DataNest runs. */
   const servers = new Map<string, PlanServer>();
 
-  const explain = async (analyze: boolean): Promise<void> => {
-    const editor = vscode.window.activeTextEditor;
+  /**
+   * `at` comes from a lens: the statement is then known by its offsets, and its editor is
+   * looked up rather than assumed to be the active one.
+   */
+  const explain = async (analyze: boolean, at?: StatementRange): Promise<void> => {
+    const editor = at === undefined ? vscode.window.activeTextEditor : editorOf(at.documentUri);
     if (editor?.document.languageId !== SQL_LANGUAGE_ID) {
       void vscode.window.showInformationMessage(
         vscode.l10n.t('Open a SQL query first: DataNest: New Query'),
@@ -64,8 +71,8 @@ export function explainCommandHandlers(deps: ExplainQueryDeps): {
     const { document, selection } = editor;
     const [written] = statementsIn(
       document.getText(),
-      document.offsetAt(selection.start),
-      document.offsetAt(selection.end),
+      at?.start ?? document.offsetAt(selection.start),
+      at?.end ?? document.offsetAt(selection.end),
       driver,
     );
     if (written === undefined) {
@@ -116,5 +123,23 @@ export function explainCommandHandlers(deps: ExplainQueryDeps): {
     explainAnalyze: async () => {
       await explain(true);
     },
+    explainRange: async (args?: unknown) => {
+      const at = statementRangeOf(args);
+      if (at === undefined) {
+        return;
+      }
+      await explain(false, at);
+    },
   };
+}
+
+/** The editor showing a document: the active one, or the one beside the results panel. */
+function editorOf(documentUri: string): vscode.TextEditor | undefined {
+  const active = vscode.window.activeTextEditor;
+  if (active?.document.uri.toString() === documentUri) {
+    return active;
+  }
+  return vscode.window.visibleTextEditors.find(
+    (candidate) => candidate.document.uri.toString() === documentUri,
+  );
 }

@@ -162,10 +162,11 @@ All of them work through SSH tunnels, SOCKS5 and HTTP proxies and TLS where the 
 - Queries run in a normal editor tab, so your keybindings, themes and extensions work.
 - `Ctrl+Enter` runs the statement under the cursor or the selection,
   `Ctrl+Shift+Enter` runs the whole file, and a “▶ Run” lens sits above every statement.
-- Above every statement, next to the Run lens, the connection and the database the query runs
-  in are shown as lenses of their own: click the connection to run the query elsewhere, click
-  the database to switch the database and keep the connection. The whole document follows —
-  a query file talks to one connection at a time.
+- Above every statement, next to the Run lens, **Explain** shows the plan of that statement
+  without running it or moving the cursor, and the connection and the database the query runs
+  in are lenses of their own: click the connection to run the query elsewhere, click the
+  database to switch the database and keep the connection. The whole document follows — a
+  query file talks to one connection at a time.
 - The statement splitter understands strings, comments, `$$ … $$`, MySQL's `DELIMITER`
   and SQL Server's `GO`, procedure bodies and variables of a batch.
 - Completion knows aliases, the columns of every joined table, CTEs and subqueries,

@@ -1256,6 +1256,7 @@ export function registerCommands(deps: CommandDeps): vscode.Disposable[] {
     [COMMAND_IDS.runRange]: runCommands.runRange,
     [COMMAND_IDS.cancelQuery]: runCommands.cancel,
     [COMMAND_IDS.explainQuery]: explains.explain,
+    [COMMAND_IDS.explainRange]: explains.explainRange,
     [COMMAND_IDS.explainAnalyze]: explains.explainAnalyze,
     [COMMAND_IDS.commitTransaction]: () => deps.transactions.end('commit'),
     [COMMAND_IDS.rollbackTransaction]: () => deps.transactions.end('rollback'),
